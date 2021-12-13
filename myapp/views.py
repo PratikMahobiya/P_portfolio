@@ -43,7 +43,7 @@ def Contact(request):
 					file_obj.save()
 
 			messages.add_message(request, messages.INFO, "Thank You.. {}".format(Name))
-			send_whatsapp_message(Name,Email,Contact,Message,File_status)
+			# send_whatsapp_message(Name,Email,Contact,Message,File_status)
 			return redirect('/')
 		else:
 			messages.add_message(request, messages.INFO, 'Thank You for Giving your Precious Time.')
