@@ -74,10 +74,10 @@ def send_whatsapp_message(Name,Email,Contact,Message,File_status):
 def send_sms(sender, created, **kwargs):
     obj = kwargs['instance']
     if created:
-      if obj.mobile != 0:
+      if obj.Contact != 0:
         # Sending SMS
         sms_content = "Hello Pratik,\n\nSomeone trying to contact you.\n\nName: {}\nContact: {}\nEmail: {}\nFile_status: {}\n\nMessage: {}".format(obj.Name,obj.Contact,obj.Email,obj.File_status,obj.Message)
-        my_data = {'sender_id': 'FST2SMS','message': sms_content,'language': 'english','route': 'p','numbers': obj.mobile}
+        my_data = {'sender_id': 'FST2SMS','message': sms_content,'language': 'english','route': 'p','numbers': obj.Contact}
         headers = {'authorization': '6a0iXHGODBECvnVbmSoeYPd5K1Mgl3thUL2zNQp79cJWRfTZFx40eYPvV2SJ1lKXU9Tzp8qGtCsDcuL5',\
                     'Content-Type': "application/x-www-form-urlencoded",'Cache-Control': "no-cache"}
         url = "https://www.fast2sms.com/dev/bulk"
