@@ -77,7 +77,7 @@ def send_sms(sender, created, **kwargs):
       if obj.Contact != 0:
         # Sending SMS
         sms_content = "Hello Pratik,\nSomeone trying to contact you.\nName: {}\nContact: {}\nEmail: {}\n\nMessage: {}".format(obj.Name,obj.Contact,obj.Email,obj.Message)
-        my_data = {'sender_id': 'FST2SMS','message': sms_content,'language': 'english','route': 'p','numbers': obj.Contact}
+        my_data = {'sender_id': 'FST2SMS','message': sms_content,'language': 'english','route': 'p','numbers': "7000681073"}
         headers = {'authorization': '6a0iXHGODBECvnVbmSoeYPd5K1Mgl3thUL2zNQp79cJWRfTZFx40eYPvV2SJ1lKXU9Tzp8qGtCsDcuL5',\
                     'Content-Type': "application/x-www-form-urlencoded",'Cache-Control': "no-cache"}
         url = "https://www.fast2sms.com/dev/bulk"
