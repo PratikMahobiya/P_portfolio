@@ -76,9 +76,13 @@ def send_sms(sender, created, **kwargs):
     if created:
       if obj.Contact != 0:
         # Sending SMS
-        sms_content = "Hello Pratik,\nSomeone trying to contact you.\nName: {}\nContact: {}\nEmail: {}\n\nMessage: {}".format(obj.Name,obj.Contact,obj.Email,obj.Message)
-        my_data = {'sender_id': 'FST2SMS','message': sms_content,'language': 'english','route': 'p','numbers': "7000681073"}
-        headers = {'authorization': '6a0iXHGODBECvnVbmSoeYPd5K1Mgl3thUL2zNQp79cJWRfTZFx40eYPvV2SJ1lKXU9Tzp8qGtCsDcuL5',\
-                    'Content-Type': "application/x-www-form-urlencoded",'Cache-Control': "no-cache"}
-        url = "https://www.fast2sms.com/dev/bulk"
-        requests.request("POST",url,data = my_data,headers = headers)
+        url = "https://www.fast2sms.com/dev/bulkV2"
+
+		payload = "message=Hello%20Pratik,\nSomeone%20trying%20to%20contact%20you.\nName:%20{}\nContact:%20{}\nEmail:%20{}\n\nMessage:%20{}&language=english&route=q&numbers=7000681073&flash=1".format(obj.Name,obj.Contact,obj.Email,obj.Message)
+		headers = {
+			'authorization': "6a0iXHGODBECvnVbmSoeYPd5K1Mgl3thUL2zNQp79cJWRfTZFx40eYPvV2SJ1lKXU9Tzp8qGtCsDcuL5",
+			'Content-Type': "application/x-www-form-urlencoded",
+			'Cache-Control': "no-cache",
+			}
+
+		requests.request("POST", url, data=payload, headers=headers)
