@@ -72,7 +72,7 @@ def download(request, path):
 
 @receiver(post_save,sender=models.Contact_form_model)
 def send_sms(sender, created, **kwargs):
-    obj = kwargs['instance']
+	obj = kwargs['instance']
 	if created:
 		if obj.Contact != 0:
 			# Sending SMS
