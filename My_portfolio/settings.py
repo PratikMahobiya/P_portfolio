@@ -25,7 +25,7 @@ SECRET_KEY = '2hy=$v0ub&omm_%d)a$q(g$5f*z04xd3+lbvg_39#xa_18o@0='
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.29.145','192.168.0.19','127.0.0.1','pratikmahobiya.pythonanywhere.com']
+ALLOWED_HOSTS = ['192.168.29.145','192.168.0.19','127.0.0.1','pratikmahobiya.pythonanywhere.com', 'localhost','https://glorious-couscous-5xpx5r69g5wh94v-8000.app.github.dev/']
 
 
 # Application definition
