@@ -1,12 +1,15 @@
+import os
 import requests
-from django.shortcuts import render, HttpResponse, redirect
-from django.contrib import messages
+
 from . import forms
 from . import models
-
+from datetime import datetime
+from django.http import Http404
+from My_portfolio import settings
+from django.contrib import messages
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-from datetime import datetime
+from django.shortcuts import render, HttpResponse, redirect
 # from twilio.rest import Client
 
 # Create your views here.
