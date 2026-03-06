@@ -1,90 +1,105 @@
 import os
 import requests
-
-from . import forms
-from . import models
 from datetime import datetime
+from django.conf import settings
 from django.http import Http404
-from My_portfolio import settings
 from django.contrib import messages
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.shortcuts import render, HttpResponse, redirect
-# from twilio.rest import Client
+from django.core.exceptions import SuspiciousFileOperation
+from django.utils._os import safe_join
 
-# Create your views here.
+from . import forms
+from . import models
+
 def Index(request):
 	# messages.add_message(request, messages.INFO, "Thank You.. ")
 	return render(request, "index.html")
 
 def Contact(request):
-	if request.method == 'POST':
-		c_form 		= forms.Contact_Form(request.POST, request.FILES)
-		if c_form.is_valid():
-			Name 		= request.POST.get('Name','')
-			Email 		= request.POST.get('Email','')
-			Contact		= request.POST.get('Contact','')
-			Message 	= request.POST.get('Message','')
-			Files 		= request.FILES.getlist('File')
-			Now 		= datetime.now()
-			Date 		= Now.strftime('%Y')+'_'+Now.strftime('%d')+'_'+Now.strftime('%b')+'_'+Now.strftime('%I')+\
-												'_'+Now.strftime('%M')+'_'+Now.strftime('%S')+'_'+Now.strftime('%p')
-			File_status = len(Files) if len(Files)!=0 else 0
+    if request.method == 'POST':
+        c_form = forms.Contact_Form(request.POST, request.FILES)
+        
+        if c_form.is_valid():
+            # 1. Use cleaned_data for sanitized input
+            name = c_form.cleaned_data.get('Name')
+            email = c_form.cleaned_data.get('Email')
+            contact = c_form.cleaned_data.get('Contact')
+            message = c_form.cleaned_data.get('Message')
+            files = request.FILES.getlist('File')
+            file_status = len(files)
+            
+            date_str = datetime.now().strftime('%Y_%d_%b_%I_%M_%S_%p')
 
-			if File_status == 0:
-				form_obj = models.Contact_form_model(Name = Name, Email = Email, Contact = Contact,
-													Message = Message, Date = Date, File_status = File_status)
-				form_obj.save()
-			else:
-				form_obj = models.Contact_form_model(Name = Name, Email = Email, Contact = Contact,
-													Message = Message, Date = Date, File_status = File_status)
-				form_obj.save()
+            # 2. Save the object ONCE
+            form_obj = models.Contact_form_model.objects.create(
+                Name=name, 
+                Email=email, 
+                Contact=contact,
+                Message=message, 
+                Date=date_str, 
+                File_status=file_status
+            )
 
-				U_id = models.Contact_form_model.objects.get(Date = Date).U_id
-				for data in Files:
-					file_obj = models.File_model.objects.create(U_id = U_id, File=data)
-					file_obj.save()
+            # 3. Use the newly created object's ID directly (No need to re-query the DB)
+            if file_status > 0:
+                # Assuming U_id is an integer field or ForeignKey. 
+                # If it's a ForeignKey, it's better to pass the object: form_obj
+                for data in files:
+                    models.File_model.objects.create(U_id=form_obj.pk, File=data)
 
-			messages.add_message(request, messages.INFO, "Thank You.. {}".format(Name))
-			# send_whatsapp_message(Name,Email,Contact,Message,File_status)
-			return redirect('/')
-		else:
-			messages.add_message(request, messages.INFO, 'Thank You for Giving your Precious Time.')
-			return redirect('/')
+            messages.success(request, f"Thank You, {name}. I will get back to you soon.")
+            return redirect('/')
+        else:
+            messages.warning(request, 'Please correct the errors in the form.')
+            # Ideally, re-render the template with form errors here instead of redirecting
+            return redirect('/') 
 
 
 def download(request, path):
-    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    # 4. Use safe_join to prevent directory traversal attacks
+    try:
+        file_path = safe_join(settings.MEDIA_ROOT, path)
+    except SuspiciousFileOperation:
+        raise Http404("Invalid file path")
+
     if os.path.exists(file_path):
         with open(file_path, 'rb') as fh:
             response = HttpResponse(fh.read(), content_type="application/pdf")
-            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+            response['Content-Disposition'] = f'inline; filename={os.path.basename(file_path)}'
             return response
     raise Http404
 
-# def send_whatsapp_message(Name,Email,Contact,Message,File_status):
-# 	account_sid = 'ACfa44115d0ff5f4602437ca7a4130b110'
-# 	auth_token = 'ed2ff6c9068fc1ae3a3e3fff11026de0'
-# 	client = Client(account_sid, auth_token)
 
-# 	message = client.messages.create(
-# 	                     body="Hello Pratik,\n\nSomeone trying to contact you.\n\nName: {}\nContact: {}\nEmail: {}\nFile_status: {}\n\nMessage: {}".format(Name,Contact,Email,File_status,Message),
-# 	                     from_='whatsapp:+14155238886',
-# 	                     to='whatsapp:+917000681073'
-# 	                 )
+@receiver(post_save, sender=models.Contact_form_model)
+def send_sms(sender, instance, created, **kwargs):
+    if created and instance.Contact != 0:
+        
+        # Note: In a true microservices/optimized architecture, 
+        # this logic should be sent to a Celery task or an SQS queue 
+        # to prevent blocking the HTTP response.
+        
+        url = "https://www.fast2sms.com/dev/bulkV2"
+        
+        # 5. Pass parameters as a dictionary to let requests handle URL encoding safely
+        payload = {
+            "message": f"Hello Pratik,\nSomeone trying to contact you.\nName: {instance.Name}\nContact: {instance.Contact}\nEmail: {instance.Email}\n\nMessage: {instance.Message}",
+            "language": "english",
+            "route": "q",
+            "numbers": "7000681073",
+            "flash": "1"
+        }
+        
+        headers = {
+            'authorization': "6a0iXHGODBECvnVbmSoeYPd5K1Mgl3thUL2zNQp79cJWRfTZFx40eYPvV2SJ1lKXU9Tzp8qGtCsDcuL5",
+            'Content-Type': "application/x-www-form-urlencoded",
+            'Cache-Control': "no-cache",
+        }
 
-@receiver(post_save,sender=models.Contact_form_model)
-def send_sms(sender, created, **kwargs):
-	obj = kwargs['instance']
-	if created:
-		if obj.Contact != 0:
-			# Sending SMS
-			url = "https://www.fast2sms.com/dev/bulkV2"
-			payload = "message=Hello%20Pratik,\nSomeone%20trying%20to%20contact%20you.\nName:%20{}\nContact:%20{}\nEmail:%20{}\n\nMessage:%20{}&language=english&route=q&numbers=7000681073&flash=1".format(obj.Name,obj.Contact,obj.Email,obj.Message)
-			headers = {
-			'authorization': "6a0iXHGODBECvnVbmSoeYPd5K1Mgl3thUL2zNQp79cJWRfTZFx40eYPvV2SJ1lKXU9Tzp8qGtCsDcuL5",
-			'Content-Type': "application/x-www-form-urlencoded",
-			'Cache-Control': "no-cache",
-			}
-
-			requests.request("POST", url, data=payload, headers=headers)
+        try:
+            # Set a timeout so your web server doesn't hang indefinitely if the API goes down
+            requests.post(url, data=payload, headers=headers, timeout=5)
+        except requests.exceptions.RequestException as e:
+            # Log the error here instead of crashing the user's request
+            print(f"Failed to send SMS: {e}")
